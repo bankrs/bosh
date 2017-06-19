@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -26,9 +27,12 @@ type state struct {
 }
 
 var session state
+var addr = flag.String("a", "api.sandbox.bankrs.com", "address of api to connect to")
 
 func main() {
-	session.client = bosgo.New(http.DefaultClient, "api.staging.bankrs.com")
+	flag.Parse()
+
+	session.client = bosgo.New(http.DefaultClient, *addr)
 	shell := ishell.New()
 	shell.SetPrompt("> ")
 
