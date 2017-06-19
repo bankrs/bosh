@@ -1,0 +1,57 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "BNhHkda5O2SrTrR4ZnLYBLvnJW4=",
+			"path": "github.com/abiosoft/ishell",
+			"revision": "882d93fdb8756b26764a5e225dbcf0a416375fc3",
+			"revisionTime": "2017-05-30T17:17:52Z"
+		},
+		{
+			"checksumSHA1": "EN+sMlYz7W+guucjAUUSSh1z/1Y=",
+			"path": "github.com/bankrs/bosgo",
+			"revision": "448da632fc0761a4150c63249cc59cd9a23c20a7",
+			"revisionTime": "2017-06-16T16:10:07Z"
+		},
+		{
+			"checksumSHA1": "aTYPm16eYDQhbVLgreCGwvV2klw=",
+			"path": "github.com/chzyer/readline",
+			"revision": "41eea22f717c616615e1e59aa06cf831f9901f35",
+			"revisionTime": "2017-03-13T23:49:21Z"
+		},
+		{
+			"checksumSHA1": "AANTVr9CVVyzsgviODY6Wi2thuM=",
+			"path": "github.com/fatih/color",
+			"revision": "62e9147c64a1ed519147b62a56a14e83e2be02c1",
+			"revisionTime": "2017-05-23T20:24:04Z"
+		},
+		{
+			"checksumSHA1": "yLQg8NdQKYqqytcvKA/0EBkOIkw=",
+			"path": "github.com/flynn-archive/go-shlex",
+			"revision": "3f9db97f856818214da2e1057f8ad84803971cff",
+			"revisionTime": "2015-05-15T14:53:56Z"
+		},
+		{
+			"checksumSHA1": "MrqRXuqj5suGXqcRUUwi+YA7PmE=",
+			"origin": "github.com/fatih/color/vendor/github.com/mattn/go-colorable",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "62e9147c64a1ed519147b62a56a14e83e2be02c1",
+			"revisionTime": "2017-05-23T20:24:04Z"
+		},
+		{
+			"checksumSHA1": "a/chskqRYBBHS8lDTpB3FQqgHb8=",
+			"origin": "github.com/fatih/color/vendor/github.com/mattn/go-isatty",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "62e9147c64a1ed519147b62a56a14e83e2be02c1",
+			"revisionTime": "2017-05-23T20:24:04Z"
+		},
+		{
+			"checksumSHA1": "BFc5CztYyZWt5aJe3z15eJnEZYA=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "b9e8d468b01f806830d387bd9a1fe96dc68129d1",
+			"revisionTime": "2017-06-07T10:07:34Z"
+		}
+	],
+	"rootPath": "github.com/bankrs/bosh"
+}
