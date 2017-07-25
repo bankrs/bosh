@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -64,10 +65,10 @@ func NewUserClient(client *http.Client, addr string, token string, applicationID
 
 func (u *UserClient) userAgent() string {
 	if u.ua == "" {
-		return UserAgent
+		return DefaultUserAgent
 	}
 
-	return UserAgent + " " + u.ua
+	return DefaultUserAgent + " " + u.ua
 }
 func (u *UserClient) newReq(path string) req {
 	return req{
@@ -165,39 +166,19 @@ func (r *ListAccessesReq) Context(ctx context.Context) *ListAccessesReq {
 	return r
 }
 
-func (r *ListAccessesReq) Send() (*BankAccessPage, error) {
+func (r *ListAccessesReq) Send() (*AccessPage, error) {
 	res, cleanup, err := r.req.get()
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var page BankAccessPage
+	var page AccessPage
 	if err := json.NewDecoder(res.Body).Decode(&page.Accesses); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
 	return &page, nil
-}
-
-type BankAccessPage struct {
-	Accesses []BankAccess
-}
-
-type BankAccess struct {
-	ID         int64  `json:"id"`
-	BankID     int64  `json:"bank_id"`
-	Name       string `json:"name"`
-	IsPinSaved bool   `json:"is_pin_saved"`
-	Enabled    bool   `json:"enabled"`
-}
-
-type ChallengeAnswerList []ChallengeAnswer
-
-type ChallengeAnswer struct {
-	ID    string `json:"id"`
-	Value string `json:"value"`
-	Store bool   `json:"store"`
 }
 
 func (a *AccessesService) Add(providerID string) *AddAccessReq {
@@ -248,13 +229,9 @@ func (r *AddAccessReq) Send() (*Job, error) {
 	return &job, nil
 }
 
-type Job struct {
-	URI string `json:"uri"`
-}
-
-func (a *AccessesService) Delete(id string) *DeleteAccessReq {
+func (a *AccessesService) Delete(id int64) *DeleteAccessReq {
 	return &DeleteAccessReq{
-		req: a.client.newReq(apiV1 + "/accesses/" + id),
+		req: a.client.newReq(apiV1 + "/accesses/" + strconv.FormatInt(id, 10)),
 	}
 }
 
@@ -285,9 +262,9 @@ func (r *DeleteAccessReq) Send() (string, error) {
 	return deleted.ID, nil
 }
 
-func (a *AccessesService) Get(id string) *GetAccessReq {
+func (a *AccessesService) Get(id int64) *GetAccessReq {
 	return &GetAccessReq{
-		req: a.client.newReq(apiV1 + "/accesses/" + id),
+		req: a.client.newReq(apiV1 + "/accesses/" + strconv.FormatInt(id, 10)),
 	}
 }
 
@@ -301,48 +278,19 @@ func (r *GetAccessReq) Context(ctx context.Context) *GetAccessReq {
 }
 
 // Send sends the request to get details of a bank access.
-func (r *GetAccessReq) Send() (*BankAccessWithAccounts, error) {
+func (r *GetAccessReq) Send() (*Access, error) {
 	res, cleanup, err := r.req.get()
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var ba BankAccessWithAccounts
+	var ba Access
 	if err := json.NewDecoder(res.Body).Decode(&ba); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
 	return &ba, nil
-}
-
-type BankAccessWithAccounts struct {
-	BankAccess
-	Accounts []Account `json:"accounts"`
-}
-
-type Account struct {
-	ID           int64                `json:"id"`
-	BankID       int64                `json:"bank_id"`
-	BankAccessID int64                `json:"bank_access_id"`
-	Name         string               `json:"name"`
-	Type         string               `json:"type"`
-	Number       string               `json:"number"`
-	Balance      string               `json:"balance"`
-	BalanceDate  string               `json:"balance_date"`
-	Enabled      bool                 `json:"enabled"`
-	Currency     string               `json:"currency"`
-	Iban         string               `json:"iban"`
-	Supported    bool                 `json:"supported"`
-	Alias        string               `json:"alias"`
-	Capabilities *AccountCapabilities `json:"capabilities" `
-	Bin          string               `json:"bin"`
-}
-
-type AccountCapabilities struct {
-	AccountStatement  []string `json:"account_statement"`
-	Transfer          []string `json:"transfer"`
-	RecurringTransfer []string `json:"recurring_transfer"`
 }
 
 func (a *AccessesService) Update(id string) *UpdateAccessReq {
@@ -368,7 +316,7 @@ func (r *UpdateAccessReq) ChallengeAnswer(answer ChallengeAnswer) *UpdateAccessR
 	return r
 }
 
-func (r *UpdateAccessReq) Send() (*BankAccessWithAccounts, error) {
+func (r *UpdateAccessReq) Send() (*Access, error) {
 	data := struct {
 		ChallengeAnswers ChallengeAnswerList `json:"challenge_answers"`
 	}{
@@ -381,7 +329,7 @@ func (r *UpdateAccessReq) Send() (*BankAccessWithAccounts, error) {
 		return nil, err
 	}
 
-	var ba BankAccessWithAccounts
+	var ba Access
 	if err := json.NewDecoder(res.Body).Decode(&ba); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
@@ -532,64 +480,6 @@ func (r *JobCancelReq) Send() error {
 	return nil
 }
 
-type JobStatus struct {
-	Finished  bool            `json:"finished"`
-	Stage     string          `json:"stage"`
-	Challenge *Challenge      `json:"challenge,omitempty"`
-	URI       string          `json:"uri,omitempty"`
-	Errors    []APIError      `json:"errors,omitempty"`
-	Access    *AccessResponse `json:"access,omitempty"`
-}
-
-type APIError struct {
-	Code    string                 `json:"code"`
-	Payload map[string]interface{} `json:"payload,omitempty"`
-}
-
-type Challenge struct {
-	CanContinue    bool             `json:"cancontinue"`
-	MaxSteps       uint             `json:"maxsteps"`
-	CurStep        uint             `json:"curstep"`
-	NextChallenges []ChallengeField `json:"nextchallenges"`
-	LastProblems   []Problem        `json:"lastproblems"`
-	Hint           string           `json:"hint"`
-}
-
-type Problem struct {
-	Domain  string            `json:"domain"`
-	Code    string            `json:"code"`
-	Message string            `json:"message"`
-	Info    map[string]string `json:"info"`
-}
-
-type ChallengeField struct {
-	ID          string   `json:"id"`
-	Description string   `json:"description"`
-	Type        string   `json:"type"`
-	Previous    string   `json:"previous"`
-	Stored      bool     `json:"stored"`
-	Reset       bool     `json:"reset"`
-	Secure      bool     `json:"secure"`
-	Optional    bool     `json:"optional"`
-	UnStoreable bool     `json:"unstoreable"`
-	Methods     []string `json:"methods"`
-}
-
-type AccessResponse struct {
-	ID       int64             `json:"id,omitempty"`
-	BankID   int64             `json:"bank_id,omitempty"`
-	Name     string            `json:"name,omitempty"`
-	Accounts []AccountResponse `json:"accounts,omitempty"`
-}
-
-type AccountResponse struct {
-	ID        int64  `json:"id,omitempty"`
-	Name      string `json:"name"`
-	Supported bool   `json:"supported"`
-	Number    string `json:"number"`
-	IBAN      string `json:"iban"`
-}
-
 // AccountsService provides access to account related API services.
 type AccountsService struct {
 	client *UserClient
@@ -661,52 +551,6 @@ func (r *GetAccountReq) Send() (*Account, error) {
 	return &account, nil
 }
 
-type Transaction struct {
-	ID                    int64            `json:"id"`
-	AccessID              int64            `json:"user_bank_access_id,omitempty"`
-	UserAccountID         int64            `json:"user_bank_account_id,omitempty"`
-	UserAccount           AccountRef       `json:"user_account,omitempty"`
-	CategoryID            int64            `json:"category_id,omitempty"`
-	RepeatedTransactionID int64            `json:"repeated_transaction_id,omitempty"`
-	Counterparty          CounterpartyWrap `json:"counterparty,omitempty"`
-
-	// EntryDate is the time the transaction became known in the account
-	EntryDate time.Time `json:"entry_date,omitempty"`
-
-	// SettlementDate is the time the transaction is cleared
-	SettlementDate time.Time `json:"settlement_date,omitempty"`
-
-	// Transaction Amount - value and currency
-	Amount *MoneyAmount `json:"amount,omitempty"`
-
-	// Usage is the main description field
-	Usage string `json:"usage,omitempty"`
-
-	// TransactionType is extracted directly from the finsnap
-	TransactionType string `json:"transaction_type,omitempty"`
-}
-
-type AccountRef struct {
-	ProviderID string `json:"provider_id"`
-	IBAN       string `json:"iban,omitempty"`
-	Label      string `json:"label,omitempty"`
-	ID         string `json:"id,omitempty"`
-}
-
-type Merchant struct {
-	Name string `json:"name"`
-}
-
-type Counterparty struct {
-	Name    string     `json:"name"`
-	Account AccountRef `json:"account,omitempty"`
-}
-
-type CounterpartyWrap struct {
-	Counterparty
-	Merchant *Merchant `json:"merchant,omitempty"`
-}
-
 // TransactionsService provides access to transaction related API services.
 type TransactionsService struct {
 	client *UserClient
@@ -744,10 +588,6 @@ func (r *ListTransactionsReq) Send() (*TransactionPage, error) {
 	}
 
 	return &page, nil
-}
-
-type TransactionPage struct {
-	Transactions []Transaction
 }
 
 func (a *TransactionsService) Get(id string) *GetTransactionReq {
@@ -925,10 +765,6 @@ func (r *ListRepeatedTransactionsReq) Send() (*RepeatedTransactionPage, error) {
 	return &page, nil
 }
 
-type RepeatedTransactionPage struct {
-	Transactions []RepeatedTransaction
-}
-
 func (a *RepeatedTransactionsService) Get(id string) *GetRepeatedTransactionReq {
 	return &GetRepeatedTransactionReq{
 		req: a.client.newReq(apiV1 + "/repeated_transactions/" + id),
@@ -959,42 +795,14 @@ func (r *GetRepeatedTransactionReq) Send() (*RepeatedTransaction, error) {
 	return &tx, nil
 }
 
-type RepeatedTransaction struct {
-	ID            int64          `json:"id"`
-	UserAccountID int64          `json:"user_bank_account_id"`
-	UserAccount   AccountRef     `json:"user_account"`
-	RemoteAccount AccountRef     `json:"remote_account"`
-	AccessID      int64          `json:"user_bank_access_id"`
-	RemoteID      string         `json:"remote_id"`
-	Schedule      RecurrenceRule `json:"schedule"`
-	Amount        *MoneyAmount   `json:"amount"`
-	Usage         string         `json:"usage"`
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//             TRANSFERS SERVICE
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// TransfersService provides access to money transfer related API services.
+type TransfersService struct {
+	client *UserClient
 }
-
-type RecurrenceRule struct {
-	Start    time.Time `json:"start"`
-	Until    time.Time `json:"until"`
-	Freq     string    `json:"frequency"`
-	Interval int       `json:"interval"`
-	ByDay    int       `json:"by_day"`
-}
-
-type MoneyAmount struct {
-	Currency string `json:"currency"`
-	Value    string `json:"value"`
-}
-
-type TransferAddress struct {
-	Name string `json:"name"` // required
-	Iban string `json:"iban"` // required
-}
-
-type TransferType string
-
-const (
-	TransferTypeRecurring TransferType = "recurring"
-	TransferTypeRegular   TransferType = "regular"
-)
 
 type transferParams struct {
 	From             string              `json:"from,omitempty"`
@@ -1007,80 +815,12 @@ type transferParams struct {
 	ChallengeAnswers ChallengeAnswerList `json:"challenge_answers,omitempty"`
 }
 
-type ChallengeAnswerMap map[string]ChallengeAnswer
-
-type RecurringTransferJob struct {
-	*RecurringTransfer
-
-	ID      string        `json:"id"`
-	Version int           `json:"version"`
-	State   string        `json:"state"`
-	Errors  []Problem     `json:"errors,omitempty"`
-	Step    *TransferStep `json:"step"`
-}
-
-type RecurringTransfer struct {
-	ID       string           `json:"id"`
-	From     *TransferAddress `json:"from"`
-	To       *TransferAddress `json:"to"`
-	Schedule *RecurrenceRule  `json:"schedule"`
-	Amount   *MoneyAmount     `json:"amount"`
-	Usage    string           `json:"usage"`
-}
-
-type RecurringTransferOptions struct {
-	BankHoliday string `json:"bank_holiday"`
-}
-
-type PaymentTransferParams struct {
-	From             *TransferAddress   `json:"from"`
-	To               *TransferAddress   `json:"to"`
-	Schedule         *RecurrenceRule    `json:"schedule,omitempty"`
-	Amount           *MoneyAmount       `json:"amount"`
-	Description      string             `json:"usage"`
-	EntryDate        time.Time          `json:"booking_date,omitempty"`
-	SettlementDate   time.Time          `json:"effective_date,omitempty"`
-	ChallengeAnswers ChallengeAnswerMap `json:"challenge_answers,omitempty"`
-	ID               string             `json:"id"`
-	Version          int                `json:"version"`
-	Step             *TransferStep      `json:"step"`
-	State            string             `json:"state"`
-	Created          time.Time          `json:"created,omitempty"`
-	Updated          time.Time          `json:"updated,omitempty"`
-	Errors           []Problem          `json:"errors"`
-}
-
-type PaymentTransferCancelParams struct {
-	ID      string `json:"id"`
-	Version int    `json:"version"`
-}
-
-type TransferStep struct {
-	Intent string            `json:"intent,omitempty"`
-	Data   *TransferStepData `json:"data,omitempty"`
-}
-
-type AuthMethod struct {
-	ID          string `json:"id"`
-	Description string `json:"description"`
-}
-
-type TransferStepData struct {
-	AuthMethods      []*AuthMethod            `json:"auth_methods,omitempty"`      // Tan Options
-	Challenge        string                   `json:"challenge,omitempty"`         // Tan Challenge
-	ChallengeMessage string                   `json:"challenge_message,omitempty"` // Tan Challenge Message
-	TanType          string                   `json:"tan_type,omitempty"`          // Type of the Tan (optical, itan, unknown)
-	Confirm          bool                     `json:"confirm,omitempty"`           // Confirm (similar transfer)
-	Transfers        []*PaymentTransferParams `json:"transfers,omitempty"`         // Transfer list (similar transfers)
-}
-
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//             TRANSFERS SERVICE
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-// TransfersService provides access to money transfer related API services.
-type TransfersService struct {
-	client *UserClient
+type transferProcessParams struct {
+	Intent           TransferIntent      `json:"intent"`
+	Version          int                 `json:"version,omitempty"`
+	Type             TransferType        `json:"type"`
+	Confirm          bool                `json:"confirm,omitempty"`
+	ChallengeAnswers ChallengeAnswerList `json:"challenge_answers,omitempty"`
 }
 
 func NewTransfersService(u *UserClient) *TransfersService {
@@ -1131,32 +871,36 @@ func (r *CreateTransferReq) ChallengeAnswer(answer ChallengeAnswer) *CreateTrans
 }
 
 // Send sends the request to create a money transfer.
-func (r *CreateTransferReq) Send() (*PaymentTransferParams, error) {
+func (r *CreateTransferReq) Send() (*Transfer, error) {
 	res, cleanup, err := r.req.postJSON(r.data)
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var job PaymentTransferParams
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr Transfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
 
 // Process returns a request that may be used to update information and answer challenges for a transfer.
-func (t *TransfersService) Process(id string, version int) *ProcessTransferReq {
+func (t *TransfersService) Process(id string, intent TransferIntent, version int) *ProcessTransferReq {
 	return &ProcessTransferReq{
-		req:     t.client.newReq(apiV1 + "/transfers/" + id + "/cancel"),
-		version: version,
+		req: t.client.newReq(apiV1 + "/transfers/" + id),
+		data: transferProcessParams{
+			Intent:  intent,
+			Version: version,
+			Type:    TransferTypeRegular,
+		},
 	}
 }
 
 type ProcessTransferReq struct {
 	req
-	version int
+	data transferProcessParams
 }
 
 // Context sets the context to be used during this request. If no context is supplied then
@@ -1166,28 +910,32 @@ func (r *ProcessTransferReq) Context(ctx context.Context) *ProcessTransferReq {
 	return r
 }
 
-// Send sends the request to update information and answer challenges for a transfer.
-func (r *ProcessTransferReq) Send() (*PaymentTransferParams, error) {
-	data := struct {
-		Version int    `json:"version,omitempty"`
-		Type    string `json:"type"`
-	}{
-		Version: r.version,
-		Type:    string(TransferTypeRegular),
-	}
+// Confirm sets whether the user has confirmed a transfer that appears to be similar to another that was recently sent.
+func (r *ProcessTransferReq) Confirm(confirm bool) *ProcessTransferReq {
+	r.data.Confirm = confirm
+	return r
+}
 
-	res, cleanup, err := r.req.postJSON(&data)
+// ChallengeAnswer adds an answer to one of the authorisation challenges required to complete the transfer.
+func (r *ProcessTransferReq) ChallengeAnswer(answer ChallengeAnswer) *ProcessTransferReq {
+	r.data.ChallengeAnswers = append(r.data.ChallengeAnswers, answer)
+	return r
+}
+
+// Send sends the request to update information and answer challenges for a transfer.
+func (r *ProcessTransferReq) Send() (*Transfer, error) {
+	res, cleanup, err := r.req.postJSON(&r.data)
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var pt PaymentTransferParams
-	if err := json.NewDecoder(res.Body).Decode(&pt); err != nil {
+	var tr Transfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &pt, nil
+	return &tr, nil
 }
 
 // Cancel returns a request that may be used to cancel an ongoing money transfer.
@@ -1211,7 +959,7 @@ func (r *CancelTransferReq) Context(ctx context.Context) *CancelTransferReq {
 }
 
 // Send sends the request to update a money transfer.
-func (r *CancelTransferReq) Send() (*PaymentTransferParams, error) {
+func (r *CancelTransferReq) Send() (*Transfer, error) {
 	data := struct {
 		Version int    `json:"version,omitempty"`
 		Type    string `json:"type"`
@@ -1226,12 +974,12 @@ func (r *CancelTransferReq) Send() (*PaymentTransferParams, error) {
 		return nil, err
 	}
 
-	var pt PaymentTransferParams
-	if err := json.NewDecoder(res.Body).Decode(&pt); err != nil {
+	var tr Transfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &pt, nil
+	return &tr, nil
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1292,19 +1040,19 @@ func (r *CreateRecurringTransferReq) ChallengeAnswer(answer ChallengeAnswer) *Cr
 }
 
 // Send sends the request to create a money transfer.
-func (r *CreateRecurringTransferReq) Send() (*RecurringTransferJob, error) {
+func (r *CreateRecurringTransferReq) Send() (*RecurringTransfer, error) {
 	res, cleanup, err := r.req.postJSON(r.data)
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var job RecurringTransferJob
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr RecurringTransfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
 
 // Delete returns a request that may be used to delete a recurring money transfer.
@@ -1334,7 +1082,7 @@ func (r *DeleteRecurringTransferReq) ChallengeAnswer(answer ChallengeAnswer) *De
 }
 
 // Send sends the request to create a money transfer.
-func (r *DeleteRecurringTransferReq) Send() (*RecurringTransferJob, error) {
+func (r *DeleteRecurringTransferReq) Send() (*RecurringTransfer, error) {
 	data := struct {
 		ChallengeAnswers ChallengeAnswerList `json:"challenge_answers"`
 	}{
@@ -1347,12 +1095,12 @@ func (r *DeleteRecurringTransferReq) Send() (*RecurringTransferJob, error) {
 		return nil, err
 	}
 
-	var job RecurringTransferJob
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr RecurringTransfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
 
 // Update returns a request that may be used to update a recurring money transfer.
@@ -1398,32 +1146,36 @@ func (r *UpdateRecurringTransferReq) ChallengeAnswer(answer ChallengeAnswer) *Up
 }
 
 // Send sends the request to update a money transfer.
-func (r *UpdateRecurringTransferReq) Send() (*RecurringTransferJob, error) {
+func (r *UpdateRecurringTransferReq) Send() (*RecurringTransfer, error) {
 	res, cleanup, err := r.req.putJSON(r.data)
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var job RecurringTransferJob
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr RecurringTransfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
 
 // Process returns a request that may be used to update information and answer challenges for a transfer.
-func (t *RecurringTransfersService) Process(id string, version int) *ProcessRecurringTransferReq {
+func (t *RecurringTransfersService) Process(id string, intent TransferIntent, version int) *ProcessRecurringTransferReq {
 	return &ProcessRecurringTransferReq{
-		req:     t.client.newReq(apiV1 + "/transfers/" + id + "/cancel"),
-		version: version,
+		req: t.client.newReq(apiV1 + "/transfers/" + id),
+		data: transferProcessParams{
+			Intent:  intent,
+			Version: version,
+			Type:    TransferTypeRecurring,
+		},
 	}
 }
 
 type ProcessRecurringTransferReq struct {
 	req
-	version int
+	data transferProcessParams
 }
 
 // Context sets the context to be used during this request. If no context is supplied then
@@ -1433,28 +1185,32 @@ func (r *ProcessRecurringTransferReq) Context(ctx context.Context) *ProcessRecur
 	return r
 }
 
-// Send sends the request to update information and answer challenges for a transfer.
-func (r *ProcessRecurringTransferReq) Send() (*RecurringTransferJob, error) {
-	data := struct {
-		Version int    `json:"version,omitempty"`
-		Type    string `json:"type"`
-	}{
-		Version: r.version,
-		Type:    string(TransferTypeRecurring),
-	}
+// Confirm sets whether the user has confirmed a transfer that appears to be similar to another that was recently sent.
+func (r *ProcessRecurringTransferReq) Confirm(confirm bool) *ProcessRecurringTransferReq {
+	r.data.Confirm = confirm
+	return r
+}
 
-	res, cleanup, err := r.req.postJSON(&data)
+// ChallengeAnswer adds an answer to one of the authorisation challenges required to complete the transfer.
+func (r *ProcessRecurringTransferReq) ChallengeAnswer(answer ChallengeAnswer) *ProcessRecurringTransferReq {
+	r.data.ChallengeAnswers = append(r.data.ChallengeAnswers, answer)
+	return r
+}
+
+// Send sends the request to update information and answer challenges for a transfer.
+func (r *ProcessRecurringTransferReq) Send() (*RecurringTransfer, error) {
+	res, cleanup, err := r.req.postJSON(&r.data)
 	defer cleanup()
 	if err != nil {
 		return nil, err
 	}
 
-	var job RecurringTransferJob
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr RecurringTransfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
 
 // Cancel returns a request that may be used to cancel an ongoing money transfer.
@@ -1478,7 +1234,7 @@ func (r *CancelRecurringTransferReq) Context(ctx context.Context) *CancelRecurri
 }
 
 // Send sends the request to update a money transfer.
-func (r *CancelRecurringTransferReq) Send() (*RecurringTransferJob, error) {
+func (r *CancelRecurringTransferReq) Send() (*RecurringTransfer, error) {
 	data := struct {
 		Version int    `json:"version,omitempty"`
 		Type    string `json:"type"`
@@ -1493,10 +1249,10 @@ func (r *CancelRecurringTransferReq) Send() (*RecurringTransferJob, error) {
 		return nil, err
 	}
 
-	var job RecurringTransferJob
-	if err := json.NewDecoder(res.Body).Decode(&job); err != nil {
+	var tr RecurringTransfer
+	if err := json.NewDecoder(res.Body).Decode(&tr); err != nil {
 		return nil, wrap(errContextInvalidServiceResponse, err)
 	}
 
-	return &job, nil
+	return &tr, nil
 }
