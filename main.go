@@ -506,18 +506,13 @@ func deleteApplication(c *ishell.Context) {
 }
 
 func useApplication(c *ishell.Context) {
-	if session.devClient == nil {
-		c.Err(fmt.Errorf("login to a developer account first"))
-		return
-	}
-
 	appID, err := readOneArg("Application ID", c)
 	if err != nil {
 		c.Err(err)
 		return
 	}
 
-	session.appClient = session.devClient.WithApplication(appID)
+	session.appClient = session.client.WithApplicationID(appID)
 	session.applicationID = appID
 	c.SetPrompt(appID + "> ")
 }
@@ -791,7 +786,12 @@ func deleteAccess(c *ishell.Context) {
 		return
 	}
 
-	id := readArg(0, "Access ID", c)
+	idstr := readArg(0, "Access ID", c)
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
+		c.Err(err)
+		return
+	}
 
 	deleted, err := session.userClient.Accesses.Delete(id).Send()
 	if err != nil {
@@ -808,7 +808,12 @@ func getAccess(c *ishell.Context) {
 		return
 	}
 
-	id := readArg(0, "Access ID", c)
+	idstr := readArg(0, "Access ID", c)
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
+		c.Err(err)
+		return
+	}
 
 	access, err := session.userClient.Accesses.Get(id).Send()
 	if err != nil {
