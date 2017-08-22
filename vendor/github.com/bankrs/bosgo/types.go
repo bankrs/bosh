@@ -129,7 +129,7 @@ type Provider struct {
 
 type ChallengeSpec struct {
 	ID          string            `json:"id"`
-	Description string            `json:"desc"`
+	Description string            `json:"description"`
 	Type        ChallengeType     `json:"type"`
 	Secure      bool              `json:"secure"`
 	UnStoreable bool              `json:"unstoreable"`
@@ -188,7 +188,7 @@ type Account struct {
 	Type         AccountType         `json:"type"`
 	Number       string              `json:"number"`
 	Balance      string              `json:"balance"`
-	BalanceDate  string              `json:"balance_date"`
+	BalanceDate  time.Time           `json:"balance_date"`
 	Enabled      bool                `json:"enabled"`
 	Currency     string              `json:"currency"`
 	IBAN         string              `json:"iban"`
@@ -285,7 +285,10 @@ type JobAccount struct {
 }
 
 type TransactionPage struct {
-	Transactions []Transaction
+	Transactions []Transaction `json:"data"`
+	Total        int           `json:"total"`
+	Limit        int           `json:"limit"`
+	Offset       int           `json:"offset"`
 }
 
 type Transaction struct {
@@ -361,8 +364,8 @@ type MoneyAmount struct {
 type TransferAddress struct {
 	Name      string `json:"name"`
 	IBAN      string `json:"iban"`
-	AccessID  string `json:"bank_access_id,omitempty"`
-	AccountID string `json:"bank_account_id,omitempty"`
+	AccessID  int64  `json:"bank_access_id,omitempty"`
+	AccountID int64  `json:"bank_account_id,omitempty"`
 }
 
 type TransferType string

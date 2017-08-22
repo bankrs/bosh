@@ -1052,7 +1052,7 @@ func deleteRecurringTransfer(c *ishell.Context) {
 	id := readArg(0, "ID", c)
 	answers := promptChallengeAnswers(c)
 
-	req := session.userClient.RecurringTransfers.Delete(id)
+	req := session.userClient.RepeatedTransactions.Delete(id)
 	for _, answer := range answers {
 		req.ChallengeAnswer(answer)
 	}
