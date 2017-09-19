@@ -518,12 +518,13 @@ func useApplication(c *ishell.Context) {
 }
 
 func listUsers(c *ishell.Context) {
-	if session.appClient == nil {
-		c.Err(fmt.Errorf("use an application id first"))
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
 		return
 	}
 
-	list, err := session.appClient.Users.List().Send()
+	applicationID := readArg(0, "Application ID", c)
+	list, err := session.devClient.Applications.ListUsers(applicationID).Send()
 	if err != nil {
 		c.Err(err)
 		return
