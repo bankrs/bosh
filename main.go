@@ -2,16 +2,20 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/abiosoft/ishell"
 	"github.com/bankrs/bosgo"
+	"github.com/mattn/go-isatty"
 )
 
 type state struct {
@@ -28,13 +32,14 @@ type state struct {
 
 var session state
 var addr = flag.String("a", "api.sandbox.bankrs.com", "address of api to connect to")
+var input = flag.String("i", "", "filename of document to read commands from")
 
 func main() {
 	flag.Parse()
 
 	session.client = bosgo.New(http.DefaultClient, *addr)
+
 	shell := ishell.New()
-	shell.SetPrompt("> ")
 
 	shell.AddCmd(&ishell.Cmd{
 		Name: "createdev",
@@ -282,8 +287,39 @@ func main() {
 		Func: deleteRecurringTransfer,
 	})
 
-	// run shell
+	// Check for commands piped from stdin
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
+		readCommands(os.Stdin, shell)
+		return
+	} else if *input != "" {
+		f, err := os.Open(*input)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		defer f.Close()
+		readCommands(f, shell)
+		return
+	}
+	shell.SetPrompt("> ")
+
 	shell.Run()
+}
+
+func readCommands(r io.Reader, shell *ishell.Shell) {
+	shell.SetOut(os.Stdout)
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		args := strings.Split(scanner.Text(), " ")
+		if err := shell.Process(args...); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+		os.Exit(1)
+	}
 }
 
 func createDeveloper(c *ishell.Context) {
