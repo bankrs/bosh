@@ -27,12 +27,13 @@ import (
 )
 
 type req struct {
-	hc      *http.Client
-	ctx     context.Context
-	addr    string
-	path    string
-	par     params
-	headers headers
+	hc       *http.Client
+	ctx      context.Context
+	clientID string
+	addr     string
+	path     string
+	par      params
+	headers  headers
 }
 
 func (r *req) url() *url.URL {
@@ -52,6 +53,9 @@ func (r *req) get() (*http.Response, func(), error) {
 	}
 	if r.ctx != nil {
 		req = req.WithContext(r.ctx)
+	}
+	if r.clientID != "" {
+		req.Header.Set("X-Client-Id", r.clientID)
 	}
 	for k, v := range r.headers {
 		req.Header.Set(k, v)
@@ -86,6 +90,9 @@ func (r *req) postJSON(data interface{}) (*http.Response, func(), error) {
 		req = req.WithContext(r.ctx)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if r.clientID != "" {
+		req.Header.Set("X-Client-Id", r.clientID)
+	}
 	for k, v := range r.headers {
 		req.Header.Set(k, v)
 	}
@@ -119,6 +126,9 @@ func (r *req) putJSON(data interface{}) (*http.Response, func(), error) {
 		req = req.WithContext(r.ctx)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if r.clientID != "" {
+		req.Header.Set("X-Client-Id", r.clientID)
+	}
 	for k, v := range r.headers {
 		req.Header.Set(k, v)
 	}
@@ -174,6 +184,9 @@ func (r *req) deleteJSON(data interface{}) (*http.Response, func(), error) {
 		req = req.WithContext(r.ctx)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if r.clientID != "" {
+		req.Header.Set("X-Client-Id", r.clientID)
+	}
 	for k, v := range r.headers {
 		req.Header.Set(k, v)
 	}
@@ -232,10 +245,10 @@ func (e *Error) Error() string {
 		if e.Errors[0].Message == "" {
 			return fmt.Sprintf("%s: %s [request-id: %s; URL: %s]", e.Errors[0].Code, e.Status, e.RequestID, e.URL)
 		}
-		return fmt.Sprintf("%s: %s [request-id: %s; URL: %s]", e.Errors[0].Code, e.Errors[0].Message, e.RequestID, e.URL)
+		return fmt.Sprintf("%s: %s [request-id: %s; Status: %s; URL: %s]", e.Errors[0].Code, e.Errors[0].Message, e.RequestID, e.Status, e.URL)
 	}
 	// TODO: expand on error message
-	return fmt.Sprintf("request failed with status %s [request-id: %s]", e.Status, e.RequestID)
+	return fmt.Sprintf("request failed with status %s [request-id: %s; URL: %s]", e.Status, e.RequestID, e.URL)
 }
 
 // ErrorItem is a detailed error code & message.
@@ -304,9 +317,16 @@ func responseError(res *http.Response) error {
 	var serr Error
 	err = json.Unmarshal(body, &serr)
 	if err != nil {
+
+		n := bytes.IndexByte(body, 0x0)
+		if n == -1 {
+			n = len(body)
+		}
+		msg := strings.Replace(strings.Replace(string(body[:n]), "\r", " ", -1), "\n", " ", -1)
+
 		rerr.Errors = append(rerr.Errors, ErrorItem{
 			Code:    "unable_to_unmarshal_error_response",
-			Message: fmt.Sprintf("received %s", string(body[:256])),
+			Message: fmt.Sprintf("received %s", msg),
 		})
 		return rerr
 	}
@@ -315,6 +335,23 @@ func responseError(res *http.Response) error {
 	return rerr
 }
 
-func wrap(prefix string, err error) error {
-	return fmt.Errorf("%s: %v", prefix, err)
+func decodeError(err error, res *http.Response) error {
+	rerr := &Error{
+		Errors: []ErrorItem{
+			{
+				Code:    "unable_to_unmarshal_json_response",
+				Message: err.Error(),
+			},
+		},
+	}
+
+	if res != nil {
+		rerr.StatusCode = res.StatusCode
+		rerr.Status = res.Status
+		rerr.Header = res.Header
+		rerr.RequestID = res.Header.Get("X-Request-Id")
+		rerr.URL = res.Request.URL.String()
+	}
+
+	return rerr
 }

@@ -96,6 +96,13 @@ func (r *CategoriesReq) Context(ctx context.Context) *CategoriesReq {
 	return r
 }
 
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *CategoriesReq) ClientID(id string) *CategoriesReq {
+	r.req.clientID = id
+	return r
+}
+
 // Send sends the request to list categories.
 func (r *CategoriesReq) Send() (*CategoryList, error) {
 	res, cleanup, err := r.req.get()
@@ -106,7 +113,7 @@ func (r *CategoriesReq) Send() (*CategoryList, error) {
 
 	var list CategoryList
 	if err := json.NewDecoder(res.Body).Decode(&list); err != nil {
-		return nil, wrap(errContextInvalidServiceResponse, err)
+		return nil, decodeError(err, res)
 	}
 
 	return &list, nil
@@ -139,6 +146,13 @@ func (r *ProvidersSearchReq) Context(ctx context.Context) *ProvidersSearchReq {
 	return r
 }
 
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *ProvidersSearchReq) ClientID(id string) *ProvidersSearchReq {
+	r.req.clientID = id
+	return r
+}
+
 // Send sends the request to search providers.
 func (r *ProvidersSearchReq) Send() (*ProviderSearchResults, error) {
 	res, cleanup, err := r.req.get()
@@ -149,7 +163,7 @@ func (r *ProvidersSearchReq) Send() (*ProviderSearchResults, error) {
 
 	var srch ProviderSearchResults
 	if err := json.NewDecoder(res.Body).Decode(&srch); err != nil {
-		return nil, wrap(errContextInvalidServiceResponse, err)
+		return nil, decodeError(err, res)
 	}
 
 	return &srch, nil
@@ -173,6 +187,13 @@ func (r *ProvidersGetReq) Context(ctx context.Context) *ProvidersGetReq {
 	return r
 }
 
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *ProvidersGetReq) ClientID(id string) *ProvidersGetReq {
+	r.req.clientID = id
+	return r
+}
+
 // Send sends the request to get a single financial provider.
 func (r *ProvidersGetReq) Send() (*Provider, error) {
 	res, cleanup, err := r.req.get()
@@ -183,7 +204,7 @@ func (r *ProvidersGetReq) Send() (*Provider, error) {
 
 	var p Provider
 	if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
-		return nil, wrap(errContextInvalidServiceResponse, err)
+		return nil, decodeError(err, res)
 	}
 
 	return &p, nil
@@ -222,6 +243,13 @@ func (r *UserCreateReq) Context(ctx context.Context) *UserCreateReq {
 	return r
 }
 
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *UserCreateReq) ClientID(id string) *UserCreateReq {
+	r.req.clientID = id
+	return r
+}
+
 // Send sends the request to create the user and returns a client that can be
 // used to access services within the new users's session.
 func (r *UserCreateReq) Send() (*UserClient, error) {
@@ -233,7 +261,7 @@ func (r *UserCreateReq) Send() (*UserClient, error) {
 
 	var t UserToken
 	if err := json.NewDecoder(res.Body).Decode(&t); err != nil {
-		return nil, wrap(errContextInvalidServiceResponse, err)
+		return nil, decodeError(err, res)
 	}
 
 	uc := NewUserClient(r.client.hc, r.client.addr, t.Token, r.client.applicationID)
@@ -266,6 +294,13 @@ func (r *UserLoginReq) Context(ctx context.Context) *UserLoginReq {
 	return r
 }
 
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *UserLoginReq) ClientID(id string) *UserLoginReq {
+	r.req.clientID = id
+	return r
+}
+
 // Send sends the request to login the user and returns a client that can be
 // used to access services within the new users's session.
 func (r *UserLoginReq) Send() (*UserClient, error) {
@@ -277,7 +312,7 @@ func (r *UserLoginReq) Send() (*UserClient, error) {
 
 	var t UserToken
 	if err := json.NewDecoder(res.Body).Decode(&t); err != nil {
-		return nil, wrap(errContextInvalidServiceResponse, err)
+		return nil, decodeError(err, res)
 	}
 
 	uc := NewUserClient(r.client.hc, r.client.addr, t.Token, r.client.applicationID)
@@ -301,8 +336,17 @@ type ResetUserPasswordReq struct {
 	data UserCredentials
 }
 
+// Context sets the context to be used during this request. If no context is supplied then
+// the request will use context.Background.
 func (r *ResetUserPasswordReq) Context(ctx context.Context) *ResetUserPasswordReq {
 	r.req.ctx = ctx
+	return r
+}
+
+// ClientID sets a client identifier that will be passed to the Bankrs API in
+// the X-Client-Id header.
+func (r *ResetUserPasswordReq) ClientID(id string) *ResetUserPasswordReq {
+	r.req.clientID = id
 	return r
 }
 
