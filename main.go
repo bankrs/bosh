@@ -210,9 +210,15 @@ func main() {
 	})
 
 	shell.AddCmd(&ishell.Cmd{
-		Name: "refreshaccesses",
+		Name: "refreshaccess",
+		Help: "refresh a bank access",
+		Func: refreshAccess,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "refreshall",
 		Help: "refresh all bank accesses",
-		Func: refreshAccesses,
+		Func: refreshAllAccesses,
 	})
 
 	shell.AddCmd(&ishell.Cmd{
@@ -867,7 +873,12 @@ func updateAccess(c *ishell.Context) {
 		return
 	}
 
-	id := readArg(0, "Access ID", c)
+	idstr := readArg(0, "Access ID", c)
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
+		c.Err(err)
+		return
+	}
 	answers := promptChallengeAnswers(c)
 
 	req := session.userClient.Accesses.Update(id)
@@ -884,13 +895,37 @@ func updateAccess(c *ishell.Context) {
 	dumpJSON(c, access)
 }
 
-func refreshAccesses(c *ishell.Context) {
+func refreshAccess(c *ishell.Context) {
 	if session.userClient == nil {
 		c.Err(fmt.Errorf("login as a user first"))
 		return
 	}
 
-	jobs, err := session.userClient.Accesses.Refresh().Send()
+	idstr := readArg(0, "Access ID", c)
+	id, err := strconv.ParseInt(idstr, 10, 64)
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	req := session.userClient.Accesses.Refresh(id)
+
+	job, err := req.Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	c.Println("Job URI:", job.URI)
+}
+
+func refreshAllAccesses(c *ishell.Context) {
+	if session.userClient == nil {
+		c.Err(fmt.Errorf("login as a user first"))
+		return
+	}
+
+	jobs, err := session.userClient.Accesses.RefreshAll().Send()
 	if err != nil {
 		c.Err(err)
 		return
