@@ -181,21 +181,23 @@ type Access struct {
 }
 
 type Account struct {
-	ID           int64               `json:"id"`
-	ProviderID   string              `json:"provider_id"`
-	BankAccessID int64               `json:"bank_access_id"`
-	Name         string              `json:"name"`
-	Type         AccountType         `json:"type"`
-	Number       string              `json:"number"`
-	Balance      string              `json:"balance"`
-	BalanceDate  time.Time           `json:"balance_date"`
-	Enabled      bool                `json:"enabled"`
-	Currency     string              `json:"currency"`
-	IBAN         string              `json:"iban"`
-	Supported    bool                `json:"supported"`
-	Alias        string              `json:"alias"`
-	Capabilities AccountCapabilities `json:"capabilities" `
-	Bin          string              `json:"bin"`
+	ID               int64               `json:"id"`
+	ProviderID       string              `json:"provider_id"`
+	BankAccessID     int64               `json:"bank_access_id"`
+	Name             string              `json:"name"`
+	Type             AccountType         `json:"type"`
+	Number           string              `json:"number"`
+	Balance          string              `json:"balance"`
+	BalanceDate      time.Time           `json:"balance_date"`
+	AvailableBalance string              `json:"available_balance"`
+	CreditLine       string              `json:"credit_line"`
+	Enabled          bool                `json:"enabled"`
+	Currency         string              `json:"currency"`
+	IBAN             string              `json:"iban"`
+	Supported        bool                `json:"supported"`
+	Alias            string              `json:"alias"`
+	Capabilities     AccountCapabilities `json:"capabilities" `
+	Bin              string              `json:"bin"`
 }
 
 type AccountCapabilities struct {
@@ -306,6 +308,7 @@ type AccountRef struct {
 	IBAN       string `json:"iban,omitempty"`
 	Label      string `json:"label,omitempty"`
 	Number     string `json:"id,omitempty"`
+	Type       string `json:"type,omitempty"`
 }
 
 type Merchant struct {
@@ -469,3 +472,25 @@ const (
 
 	TANTypeUnknown TANType = "unknown"
 )
+
+type DeletedUser struct {
+	DeletedUserID string `json:"deleted_user_id"`
+}
+
+type IBANDetails struct {
+	Account IBANAccount `json:"acc_ref"`
+	Banks   []IBANBank  `json:"fis"`
+}
+
+type IBANBank struct {
+	ID             string `json:"id"`              // the bank identity assigned by the identity provider
+	Label          string `json:"label"`           // the bank name
+	Country        string `json:"country"`         // the country (e.g. DE)
+	Provider       string `json:"provider"`        //  the identity provider (e.g. BIC)
+	ServiceContext string `json:"service_context"` // the service context, (e.g. SEPA)
+}
+
+type IBANAccount struct {
+	IBAN     string `json:"IBAN"`     // the validated IBAN
+	Provider string `json:"provider"` // the authoritative provider, IBO for IBANs
+}

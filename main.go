@@ -293,6 +293,12 @@ func main() {
 		Func: deleteRecurringTransfer,
 	})
 
+	shell.AddCmd(&ishell.Cmd{
+		Name: "validateiban",
+		Help: "validate an IBAN",
+		Func: validateIBAN,
+	})
+
 	// Check for commands piped from stdin
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		readCommands(os.Stdin, shell)
@@ -725,12 +731,14 @@ func deleteUser(c *ishell.Context) {
 		c.Err(fmt.Errorf("not logged in as a user"))
 		return
 	}
-	err := session.userClient.Delete().Send()
+	password := readArgPassword(0, "Password", c)
+	delUser, err := session.userClient.Delete(password).Send()
 	if err != nil {
 		c.Err(err)
 		return
 	}
 
+	c.Printf("Deleted user id %s\n", delUser.DeletedUserID)
 	session.userClient = nil
 	session.userName = ""
 	c.SetPrompt(session.applicationID + "> ")
@@ -1287,4 +1295,21 @@ func promptChallengeAnswers(c *ishell.Context) bosgo.ChallengeAnswerList {
 
 		answers = append(answers, answer)
 	}
+}
+
+func validateIBAN(c *ishell.Context) {
+	if session.appClient == nil {
+		c.Err(fmt.Errorf("use an application id first"))
+		return
+	}
+
+	iban := readArg(0, "IBAN", c)
+
+	ibanInfo, err := session.appClient.IBAN.Validate(iban).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	dumpJSON(c, ibanInfo)
 }

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -142,7 +143,7 @@ func (r *DeveloperDeleteReq) ClientID(id string) *DeveloperDeleteReq {
 // Send sends the request to delete developer. Once this request has been sent
 // the developer client should not be used again.
 func (r *DeveloperDeleteReq) Send() error {
-	_, cleanup, err := r.req.delete()
+	_, cleanup, err := r.req.delete(nil)
 	defer cleanup()
 	if err != nil {
 		return err
@@ -369,7 +370,7 @@ type CreateApplicationsResponse struct {
 
 func (d *ApplicationsService) Update(applicationID string, label string) *UpdateApplicationReq {
 	return &UpdateApplicationReq{
-		req: d.client.newReq(apiV1 + "/developers/applications/" + applicationID),
+		req: d.client.newReq(apiV1 + "/developers/applications/" + url.PathEscape(applicationID)),
 		data: ApplicationMetadata{
 			Label: label,
 		},
@@ -407,7 +408,7 @@ func (r *UpdateApplicationReq) Send() error {
 
 func (d *ApplicationsService) Delete(applicationID string) *DeleteApplicationsReq {
 	return &DeleteApplicationsReq{
-		req: d.client.newReq(apiV1 + "/developers/applications/" + applicationID),
+		req: d.client.newReq(apiV1 + "/developers/applications/" + url.PathEscape(applicationID)),
 	}
 }
 
@@ -430,7 +431,7 @@ func (r *DeleteApplicationsReq) ClientID(id string) *DeleteApplicationsReq {
 }
 
 func (r *DeleteApplicationsReq) Send() error {
-	_, cleanup, err := r.req.delete()
+	_, cleanup, err := r.req.delete(nil)
 	defer cleanup()
 	if err != nil {
 		return err
