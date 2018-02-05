@@ -353,7 +353,7 @@ func (r *ResetUserPasswordReq) ClientID(id string) *ResetUserPasswordReq {
 	return r
 }
 
-// Send sends the request to retrieve the developer's profile.
+// Send sends the request to reset a user's password.
 func (r *ResetUserPasswordReq) Send() error {
 	_, cleanup, err := r.req.postJSON(r.data)
 	defer cleanup()

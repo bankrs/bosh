@@ -299,6 +299,12 @@ func main() {
 		Func: validateIBAN,
 	})
 
+	shell.AddCmd(&ishell.Cmd{
+		Name: "resetuser",
+		Help: "reset one user's banking data",
+		Func: resetUser,
+	})
+
 	// Check for commands piped from stdin
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		readCommands(os.Stdin, shell)
@@ -1312,4 +1318,34 @@ func validateIBAN(c *ishell.Context) {
 	}
 
 	dumpJSON(c, ibanInfo)
+}
+
+func resetUser(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+	username := readArg(1, "Username", c)
+	resp, err := session.devClient.Applications.ResetUsers(applicationID, []string{username}).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	if len(resp.Users) != 1 || resp.Users[0].Username != username {
+		c.Err(fmt.Errorf("reset failed: could not find user in response"))
+		return
+	}
+
+	if len(resp.Users[0].Problems) != 0 {
+		errs := []string{}
+		for _, p := range resp.Users[0].Problems {
+			errs = append(errs, p.Code)
+		}
+		c.Err(fmt.Errorf("reset failed: %s", strings.Join(errs, "; ")))
+		return
+	}
+
+	c.Printf("Reset user %s\n", username)
 }
