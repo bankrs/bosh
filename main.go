@@ -305,6 +305,12 @@ func main() {
 		Func: resetUser,
 	})
 
+	shell.AddCmd(&ishell.Cmd{
+		Name: "userinfo",
+		Help: "lookup information about a user",
+		Func: userInfo,
+	})
+
 	// Check for commands piped from stdin
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		readCommands(os.Stdin, shell)
@@ -1348,4 +1354,20 @@ func resetUser(c *ishell.Context) {
 	}
 
 	c.Printf("Reset user %s\n", username)
+}
+
+func userInfo(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+	uuid := readArg(1, "UUID", c)
+	resp, err := session.devClient.Applications.UserInfo(applicationID, uuid).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	c.Printf("Username: %s\n", resp.Username)
 }
