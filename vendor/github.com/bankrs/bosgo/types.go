@@ -191,10 +191,8 @@ type Account struct {
 	BalanceDate      time.Time           `json:"balance_date"`
 	AvailableBalance string              `json:"available_balance"`
 	CreditLine       string              `json:"credit_line"`
-	Enabled          bool                `json:"enabled"`
 	Currency         string              `json:"currency"`
 	IBAN             string              `json:"iban"`
-	Supported        bool                `json:"supported"`
 	Alias            string              `json:"alias"`
 	Capabilities     AccountCapabilities `json:"capabilities" `
 	Bin              string              `json:"bin"`
@@ -274,11 +272,11 @@ type JobAccess struct {
 }
 
 type JobAccount struct {
-	ID        int64  `json:"id,omitempty"`
-	Name      string `json:"name"`
-	Supported bool   `json:"supported"`
-	Number    string `json:"number"`
-	IBAN      string `json:"iban"`
+	ID     int64     `json:"id,omitempty"`
+	Name   string    `json:"name"`
+	Number string    `json:"number"`
+	IBAN   string    `json:"iban"`
+	Errors []Problem `json:"errors"`
 }
 
 type TransactionPage struct {
@@ -506,4 +504,47 @@ type ResetUserOutcome struct {
 
 type DevUserInfo struct {
 	Username string `json:"username"`
+}
+
+type Webhook struct {
+	ID          string    `json:"id"`
+	URL         string    `json:"url"`
+	Events      []string  `json:"events"`
+	APIVersion  int       `json:"api_version"`
+	Enabled     bool      `json:"enabled"`
+	Environment string    `json:"environment"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type WebhookPage struct {
+	Webhooks []Webhook `json:"webhooks,omitempty"`
+}
+
+type WebhookTestResult struct {
+	Payload  EventPayload  `json:"payload"`
+	Response EventResponse `json:"response"`
+}
+
+type EventPayload struct {
+	Event Event                  `json:"event"`
+	Data  map[string]interface{} `json:"data"`
+}
+
+type Event struct {
+	ID          string    `json:"id"`
+	Type        string    `json:"type"`
+	URL         string    `json:"url"`
+	APIVersion  int       `json:"api_version"`
+	Environment string    `json:"environment"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type EventResponse struct {
+	ID     string `json:"id"`
+	Code   int    `json:"code"`
+	Status string `json:"status"`
+}
+
+type ApplicationSettings struct {
+	BackgroundRefresh bool `json:"background_refresh"`
 }
