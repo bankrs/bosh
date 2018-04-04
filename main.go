@@ -48,7 +48,15 @@ func main() {
 		httpClient = &http.Client{Transport: tr}
 
 	}
-	session.client = bosgo.New(httpClient, *addr)
+
+	opts := []bosgo.ClientOption{
+		bosgo.UserAgent("bosh"),
+	}
+	if *addr != "api.bankrs.com" && *addr != "api.sandbox.bankrs.com" {
+		opts = append(opts, bosgo.Environment("sandbox"))
+	}
+
+	session.client = bosgo.New(httpClient, *addr, opts...)
 
 	shell := ishell.New()
 
@@ -320,6 +328,18 @@ func main() {
 		Name: "userinfo",
 		Help: "lookup information about a user",
 		Func: userInfo,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "appsettings",
+		Help: "show application settings",
+		Func: appSettings,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "updateappsettings",
+		Help: "update application settings",
+		Func: updateAppSettings,
 	})
 
 	// Check for commands piped from stdin
@@ -1381,4 +1401,39 @@ func userInfo(c *ishell.Context) {
 	}
 
 	c.Printf("Username: %s\n", resp.Username)
+}
+
+func appSettings(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+	resp, err := session.devClient.Applications.Settings(applicationID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	c.Printf("Background refresh enabled: %v\n", resp.BackgroundRefresh)
+}
+
+func updateAppSettings(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+	backgroundRefresh := readArgBool(1, "Background refresh enabled (y/n)", c)
+
+	req := session.devClient.Applications.UpdateSettings(applicationID)
+	req.BackgroundRefresh(backgroundRefresh)
+
+	resp, err := req.Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+	c.Printf("Background refresh enabled: %v\n", resp.BackgroundRefresh)
 }
