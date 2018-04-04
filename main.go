@@ -3,6 +3,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -33,11 +34,21 @@ type state struct {
 var session state
 var addr = flag.String("a", "api.sandbox.bankrs.com", "address of api to connect to")
 var input = flag.String("i", "", "filename of document to read commands from")
+var insecure = flag.Bool("insecure", false, "set to disable TLS verification, e.g. for development systems with self signed certificates")
 
 func main() {
 	flag.Parse()
 
-	session.client = bosgo.New(http.DefaultClient, *addr)
+	var httpClient = http.DefaultClient
+
+	if *insecure {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		httpClient = &http.Client{Transport: tr}
+
+	}
+	session.client = bosgo.New(httpClient, *addr)
 
 	shell := ishell.New()
 
