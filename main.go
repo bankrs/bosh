@@ -365,7 +365,11 @@ func readCommands(r io.Reader, shell *ishell.Shell) {
 	shell.SetOut(os.Stdout)
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		args := strings.Split(scanner.Text(), " ")
+		text := scanner.Text()
+		if strings.HasPrefix(text, "#") {
+			continue
+		}
+		args := strings.Split(text, " ")
 		if err := shell.Process(args...); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
