@@ -2,16 +2,16 @@
 
 This is an interactive shell for accessing the Bankrs OS API.
 
-**Documentation:** [![GoDoc](https://godoc.org/github.com/bankrs/bosh?status.svg)](https://godoc.org/github.com/bankrs/bosh)  
+**Documentation:** [![GoDoc](https://godoc.org/code.bankrs.com/bosh?status.svg)](https://godoc.org/code.bankrs.com/bosh)  
 
-bosh requires Go version 1.7 or greater.
+bosh requires Go version 1.8 or greater.
 
 ## Getting started
 
 Ensure you have a working Go installation and then use go get as follows:
 
 ```
-go get github.com/bankrs/bosh
+go get code.bankrs.com/bosh
 ```
 
 ## Running bosh

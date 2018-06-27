@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"code.bankrs.com/bosgo"
 	"github.com/abiosoft/ishell"
-	"github.com/bankrs/bosgo"
 	"github.com/mattn/go-isatty"
 )
 
