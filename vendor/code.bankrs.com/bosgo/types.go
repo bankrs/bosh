@@ -172,30 +172,33 @@ type AccessPage struct {
 }
 
 type Access struct {
-	ID         int64     `json:"id"`
-	Name       string    `json:"name"`
-	Enabled    bool      `json:"enabled"`
-	IsPinSaved bool      `json:"is_pin_saved"`
-	ProviderID string    `json:"provider_id"`
-	Accounts   []Account `json:"accounts,omitempty"`
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	Enabled      bool               `json:"enabled"`
+	IsPinSaved   bool               `json:"is_pin_saved"`
+	ProviderID   string             `json:"provider_id"`
+	Accounts     []Account          `json:"accounts,omitempty"`
+	Capabilities AccessCapabilities `json:"capabilities"`
 }
 
 type Account struct {
-	ID               int64               `json:"id"`
-	ProviderID       string              `json:"provider_id"`
-	BankAccessID     int64               `json:"bank_access_id"`
-	Name             string              `json:"name"`
-	Type             AccountType         `json:"type"`
-	Number           string              `json:"number"`
-	Balance          string              `json:"balance"`
-	BalanceDate      time.Time           `json:"balance_date"`
-	AvailableBalance string              `json:"available_balance"`
-	CreditLine       string              `json:"credit_line"`
-	Currency         string              `json:"currency"`
-	IBAN             string              `json:"iban"`
-	Alias            string              `json:"alias"`
-	Capabilities     AccountCapabilities `json:"capabilities" `
-	Bin              string              `json:"bin"`
+	ID                int64               `json:"id"`
+	ProviderID        string              `json:"provider_id"`
+	BankAccessID      int64               `json:"bank_access_id"`
+	Name              string              `json:"name"`
+	Type              AccountType         `json:"type"`
+	Number            string              `json:"number"`
+	Balance           string              `json:"balance"`
+	BalanceDate       time.Time           `json:"balance_date"`
+	AvailableBalance  string              `json:"available_balance"`
+	CreditLine        string              `json:"credit_line"`
+	Removed           bool                `json:"removed"`
+	Currency          string              `json:"currency"`
+	IBAN              string              `json:"iban"`
+	Alias             string              `json:"alias"`
+	Capabilities      AccountCapabilities `json:"capabilities"`
+	AllowedOperations AllowedOperations   `json:"allowed_operations"`
+	Bin               string              `json:"bin"`
 }
 
 type AccountCapabilities struct {
@@ -204,11 +207,24 @@ type AccountCapabilities struct {
 	RecurringTransfer []string `json:"recurring_transfer"`
 }
 
+type AllowedOperations struct {
+	PaymentTransfer     bool `json:"transfer"`
+	AccountStatement    bool `json:"statement"`
+	AccountBalance      bool `json:"balance"`
+	CreditCardStatement bool `json:"-"`
+	CreditCardBalance   bool `json:"-"`
+	CreateRecTrf        bool `json:"create_recurring_transfer"`
+	ReadRecTrf          bool `json:"read_recurring_transfer"`
+	UpdateRecTrf        bool `json:"update_recurring_transfer"`
+	DeleteRecTrf        bool `json:"delete_recurring_transfer"`
+}
+
 type AccountType string
 
 const (
-	AccountTypeBank       AccountType = "bank"
-	AccountTypeCreditCard AccountType = "credit_card"
+	AccountTypeCurrent    AccountType = "current"
+	AccountTypeSavings    AccountType = "savings"
+	AccountTypeCreditCard AccountType = "creditcard"
 	AccountTypeLoan       AccountType = "loan"
 )
 
@@ -237,12 +253,8 @@ const (
 )
 
 type Challenge struct {
-	CanContinue    bool             `json:"can_continue"`
-	MaxSteps       uint             `json:"max_steps"`
-	CurStep        uint             `json:"cur_step"`
 	NextChallenges []ChallengeField `json:"next_challenges"`
 	LastProblems   []Problem        `json:"last_problems"`
-	Hint           string           `json:"hint"`
 }
 
 type ChallengeField struct {
@@ -299,6 +311,7 @@ type Transaction struct {
 	Amount                *MoneyAmount `json:"amount,omitempty"`
 	Usage                 string       `json:"usage,omitempty"`
 	TransactionType       string       `json:"transaction_type,omitempty"`
+	Gvcode                string       `json:"gvcode,omitempty"`
 }
 
 type AccountRef struct {
@@ -465,6 +478,8 @@ const (
 	TANTypePush TANType = "push"
 	// TANTypeOTP indicates a one-time password
 	TANTypeOTP TANType = "otp"
+	// TypeUSB indicate a usb based TAN
+	TANTypeUSB TANType = "usb"
 	// TANTypePhoto indicates a colorised matrix barcode
 	TANTypePhoto TANType = "photo"
 
@@ -547,4 +562,35 @@ type EventResponse struct {
 
 type ApplicationSettings struct {
 	BackgroundRefresh bool `json:"background_refresh"`
+}
+
+type AccessCapabilities struct {
+	RecurringTransfer RecurringTransferCapabilities `json:"recurring_transfer"`
+	ScheduledTransfer ScheduledTransferCapabilities `json:"scheduled_transfer"`
+	Trading           bool                          `json:"trading"`
+}
+
+type RecurringTransferCapabilities struct {
+	Periods                      []Period `json:"periods"`
+	MinimumLeadTimeCreate        int      `json:"minimum_lead_time_create"`
+	MaximumLeadTimeCreate        int      `json:"maximum_lead_time_create"`
+	MinimumLeadTimeEdit          int      `json:"minimum_lead_time_edit"`
+	MaximumLeadTimeEdit          int      `json:"maximum_lead_time_edit"`
+	MinimumLeadTimeDelete        int      `json:"minimum_lead_time_delete"`
+	MaximumLeadTimeDelete        int      `json:"maximum_lead_time_delete"`
+	LastDayOfMonthEnabled        bool     `json:"last_day_of_month_enabled"`
+	FirstScheduledDateModifiable bool     `json:"first_scheduled_date_modifiable"`
+	TimeUnitModifiable           bool     `json:"time_unit_modifiable"`
+	PeriodLengthModifiable       bool     `json:"period_length_modifiable"`
+	ScheduledDateModifiable      bool     `json:"scheduled_date_modifiable"`
+	LastScheduleDateModifiable   bool     `json:"last_schedule_date_modifiable"`
+}
+
+type ScheduledTransferCapabilities struct {
+	Supported bool `json:"supported"`
+}
+
+type Period struct {
+	Type   string `json:"type"`
+	Repeat int    `json:"repeat"`
 }
