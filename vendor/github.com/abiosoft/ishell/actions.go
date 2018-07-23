@@ -6,8 +6,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
-
-	"github.com/chzyer/readline"
 )
 
 // Actions are actions that can be performed by a shell.
@@ -163,18 +161,18 @@ func (s *shellActionsImpl) HelpText() string {
 	return s.rootCmd.HelpText()
 }
 
-func clearScreen(s *Shell) error {
-	_, err := readline.ClearScreen(s.writer)
-	return err
-}
-
 func showPaged(s *Shell, text string) error {
 	var cmd *exec.Cmd
-	if runtime.GOOS == "windows" {
-		cmd = exec.Command("more")
-	} else {
-		cmd = exec.Command("less")
+
+	if s.pager == "" {
+		if runtime.GOOS == "windows" {
+			s.pager = "more"
+		} else {
+			s.pager = "less"
+		}
 	}
+
+	cmd = exec.Command(s.pager, s.pagerArgs...)
 	cmd.Stdout = s.writer
 	cmd.Stderr = s.writer
 	cmd.Stdin = bytes.NewBufferString(text)
