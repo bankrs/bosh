@@ -1,7 +1,7 @@
 module code.bankrs.com/bosh
 
 require (
-	code.bankrs.com/bosgo v0.2.6
+	code.bankrs.com/bosgo v0.2.8
 	github.com/abiosoft/ishell v2.0.0+incompatible
 	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
@@ -13,5 +13,5 @@ require (
 	github.com/mattn/go-isatty v0.0.3
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2 // indirect
-	golang.org/x/sys v0.0.0-20180715085529-ac767d655b30 // indirect
+	golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e // indirect
 )
