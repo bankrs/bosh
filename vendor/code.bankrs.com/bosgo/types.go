@@ -18,9 +18,18 @@ type ApplicationPage struct {
 }
 
 type ApplicationMetadata struct {
-	ApplicationID string    `json:"application_id,omitempty"`
+	ApplicationID string    `json:"id,omitempty"`
 	Label         string    `json:"label,omitempty"`
-	CreatedAt     time.Time `json:"created_at,omitempty"`
+	CreatedAt     time.Time `json:"created_at,omitempty"` // Deprecated: no longer used
+}
+
+type ApplicationKeyPage struct {
+	Keys []ApplicationKey `json:"keys,omitempty"`
+}
+
+type ApplicationKey struct {
+	Key       string    `json:"key,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 
 type StatsPeriod struct {
@@ -309,6 +318,7 @@ type Transaction struct {
 	CategoryID            int64           `json:"category_id,omitempty"`
 	RepeatedTransactionID int64           `json:"repeated_transaction_id,omitempty"`
 	Counterparty          Counterparty    `json:"counterparty,omitempty"`
+	RemoteID              string          `json:"remote_id"`
 	EntryDate             time.Time       `json:"entry_date,omitempty"`
 	SettlementDate        time.Time       `json:"settlement_date,omitempty"`
 	Amount                *MoneyAmount    `json:"amount,omitempty"`
@@ -371,6 +381,7 @@ type RecurrenceRule struct {
 type Frequency string
 
 const (
+	FrequencyOnce    Frequency = "once"
 	FrequencyDaily   Frequency = "daily"
 	FrequencyWeekly  Frequency = "weekly"
 	FrequencyMonthly Frequency = "monthly"
@@ -412,6 +423,7 @@ type Transfer struct {
 	SettlementDate   time.Time          `json:"effective_date,omitempty"`
 	Created          time.Time          `json:"created,omitempty"`
 	Updated          time.Time          `json:"updated,omitempty"`
+	RemoteID         string             `json:"remote_id"`
 	ChallengeAnswers ChallengeAnswerMap `json:"challenge_answers,omitempty"`
 	Errors           []Problem          `json:"errors"`
 }
@@ -426,6 +438,7 @@ type RecurringTransfer struct {
 	Step             TransferStep       `json:"step"`
 	State            TransferState      `json:"state"`
 	Schedule         *RecurrenceRule    `json:"schedule,omitempty"`
+	RemoteID         string             `json:"remote_id"`
 	ChallengeAnswers ChallengeAnswerMap `json:"challenge_answers,omitempty"`
 	Errors           []Problem          `json:"errors,omitempty"`
 }

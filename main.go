@@ -342,6 +342,19 @@ func main() {
 		Func: updateAppSettings,
 	})
 
+        shell.AddCmd(&ishell.Cmd{
+                Name: "listappkeys",
+                Help: "list application keys",
+                Func: listAppKeys,
+        })
+
+        shell.AddCmd(&ishell.Cmd{
+                Name: "createappkey",
+                Help: "create application key",
+                Func: createAppKey,
+        })
+
+
 	// Check for commands piped from stdin
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
 		readCommands(os.Stdin, shell)
@@ -1441,3 +1454,39 @@ func updateAppSettings(c *ishell.Context) {
 
 	c.Printf("Background refresh enabled: %v\n", resp.BackgroundRefresh)
 }
+
+func listAppKeys(c *ishell.Context) {
+        if session.devClient == nil {
+                c.Err(fmt.Errorf("login to a developer account first"))
+                return
+        }
+
+        applicationID := readArg(0, "Application ID", c)
+        list, err := session.devClient.Applications.ListKeys(applicationID).Send()
+        if err != nil {
+                c.Err(err)
+                return
+        }
+
+        for _, key := range list.Keys {
+                c.Printf("* %s\n", key.Key)
+        }
+}
+
+func createAppKey(c *ishell.Context) {
+        if session.devClient == nil {
+                c.Err(fmt.Errorf("login to a developer account first"))
+                return
+        }
+
+        applicationID := readArg(0, "Application ID", c)
+        key, err := session.devClient.Applications.CreateKey(applicationID).Send()
+        if err != nil {
+                c.Err(err)
+                return
+        }
+
+        c.Printf("* %s\n", key.Key)
+}
+
+
