@@ -342,18 +342,53 @@ func main() {
 		Func: updateAppSettings,
 	})
 
-        shell.AddCmd(&ishell.Cmd{
-                Name: "listappkeys",
-                Help: "list application keys",
-                Func: listAppKeys,
-        })
+	shell.AddCmd(&ishell.Cmd{
+		Name: "listappkeys",
+		Help: "list application keys",
+		Func: listAppKeys,
+	})
 
-        shell.AddCmd(&ishell.Cmd{
-                Name: "createappkey",
-                Help: "create application key",
-                Func: createAppKey,
-        })
+	shell.AddCmd(&ishell.Cmd{
+		Name: "createappkey",
+		Help: "create application key",
+		Func: createAppKey,
+	})
 
+	shell.AddCmd(&ishell.Cmd{
+		Name: "addcredentials",
+		Help: "add a set of stored credentials",
+		Func: addCredentials,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "listcredentials",
+		Help: "list all stored sets of credentials",
+		Func: listCredentials,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "getcredentials",
+		Help: "get a set of stored credentials",
+		Func: getCredentials,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "deletecredentials",
+		Help: "delete a set of stored credentials",
+		Func: deleteCredentials,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "updatecredentials",
+		Help: "update a set of stored credentials",
+		Func: updateCredentials,
+	})
+
+	shell.AddCmd(&ishell.Cmd{
+		Name: "listcredentialproviders",
+		Help: "list supported providers for credential sets",
+		Func: listCredentialProviders,
+	})
 
 	// Check for commands piped from stdin
 	if !isatty.IsTerminal(os.Stdin.Fd()) {
@@ -1357,6 +1392,25 @@ func promptChallengeAnswers(c *ishell.Context) bosgo.ChallengeAnswerList {
 	}
 }
 
+func promptKeyValueList(c *ishell.Context, keyPrompt string) map[string]string {
+	c.ShowPrompt(false)
+	defer c.ShowPrompt(true)
+
+	kv := map[string]string{}
+	for {
+		var k string
+
+		c.Print(keyPrompt + " (q to quit): ")
+		k = c.ReadLine()
+		if strings.ToLower(k) == "q" {
+			return kv
+		}
+
+		c.Print("Value: ")
+		kv[k] = c.ReadLine()
+	}
+}
+
 func validateIBAN(c *ishell.Context) {
 	if session.appClient == nil {
 		c.Err(fmt.Errorf("use an application id first"))
@@ -1456,37 +1510,130 @@ func updateAppSettings(c *ishell.Context) {
 }
 
 func listAppKeys(c *ishell.Context) {
-        if session.devClient == nil {
-                c.Err(fmt.Errorf("login to a developer account first"))
-                return
-        }
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
 
-        applicationID := readArg(0, "Application ID", c)
-        list, err := session.devClient.Applications.ListKeys(applicationID).Send()
-        if err != nil {
-                c.Err(err)
-                return
-        }
+	applicationID := readArg(0, "Application ID", c)
+	list, err := session.devClient.Applications.ListKeys(applicationID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
 
-        for _, key := range list.Keys {
-                c.Printf("* %s\n", key.Key)
-        }
+	for _, key := range list.Keys {
+		c.Printf("* %s\n", key.Key)
+	}
 }
 
 func createAppKey(c *ishell.Context) {
-        if session.devClient == nil {
-                c.Err(fmt.Errorf("login to a developer account first"))
-                return
-        }
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
 
-        applicationID := readArg(0, "Application ID", c)
-        key, err := session.devClient.Applications.CreateKey(applicationID).Send()
-        if err != nil {
-                c.Err(err)
-                return
-        }
+	applicationID := readArg(0, "Application ID", c)
+	key, err := session.devClient.Applications.CreateKey(applicationID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
 
-        c.Printf("* %s\n", key.Key)
+	c.Printf("* %s\n", key.Key)
 }
 
+func addCredentials(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+	provider := readArg(1, "Credential Provider", c)
 
+	credentials := promptKeyValueList(c, "Credential Name")
+
+	credentialID, err := session.devClient.Applications.CreateCredential(applicationID, provider, credentials).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+	c.Printf("Credential added. Credential ID: %s\n", credentialID)
+
+}
+
+func listCredentials(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	applicationID := readArg(0, "Application ID", c)
+
+	creds, err := session.devClient.Applications.ListCredentials(applicationID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+	dumpJSON(c, creds)
+}
+
+func getCredentials(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	credentialID := readArg(0, "Credential ID", c)
+
+	creds, err := session.devClient.Credentials.Get(credentialID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+	dumpJSON(c, creds)
+
+}
+
+func deleteCredentials(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	credentialID := readArg(0, "Credential ID", c)
+
+	err := session.devClient.Credentials.Delete(credentialID).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+}
+
+func updateCredentials(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+	credentialID := readArg(0, "Credential ID", c)
+	credentials := promptKeyValueList(c, "Credential Name")
+
+	err := session.devClient.Credentials.Update(credentialID, credentials).Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+
+}
+
+func listCredentialProviders(c *ishell.Context) {
+	if session.devClient == nil {
+		c.Err(fmt.Errorf("login to a developer account first"))
+		return
+	}
+
+	providers, err := session.devClient.Credentials.ListProviders().Send()
+	if err != nil {
+		c.Err(err)
+		return
+	}
+	dumpJSON(c, providers)
+}
