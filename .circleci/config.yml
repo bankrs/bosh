@@ -44,28 +44,8 @@ jobs:
       - image: golang:latest
     <<: *buildsteps
 
-  go-1.10:
-    <<: *defaults
-    environment:
-      <<: *job-environment
-      VERSION: 1.10
-    docker:
-      - image: golang:1.10
-    <<: *buildsteps
-
-  go-1.9:
-    <<: *defaults
-    environment:
-      <<: *job-environment
-      VERSION: 1.9
-    docker:
-      - image: golang:1.9
-    <<: *buildsteps
-
 workflows:
   version: 2
   build_and_test:
     jobs:
       - go-latest
-      - go-1.10
-      - go-1.9
