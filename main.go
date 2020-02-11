@@ -24,8 +24,8 @@ type state struct {
 	devEmail  string
 	devClient *bosgo.DevClient
 
-	applicationID string
-	appClient     *bosgo.AppClient
+	applicationKey string
+	appClient      *bosgo.AppClient
 
 	userName   string
 	userClient *bosgo.UserClient
@@ -178,12 +178,6 @@ func main() {
 		Name: "deleteuser",
 		Help: "delete the current user",
 		Func: deleteUser,
-	})
-
-	shell.AddCmd(&ishell.Cmd{
-		Name: "categories",
-		Help: "list classification categories",
-		Func: categories,
 	})
 
 	shell.AddCmd(&ishell.Cmd{
@@ -649,15 +643,15 @@ func deleteApplication(c *ishell.Context) {
 }
 
 func useApplication(c *ishell.Context) {
-	appID, err := readOneArg("Application ID", c)
+	appKey, err := readOneArg("Application Key", c)
 	if err != nil {
 		c.Err(err)
 		return
 	}
 
-	session.appClient = session.client.WithApplicationID(appID)
-	session.applicationID = appID
-	c.SetPrompt(appID + "> ")
+	session.appClient = session.client.WithApplicationKey(appKey)
+	session.applicationKey = appKey
+	c.SetPrompt(appKey + "> ")
 }
 
 func listUsers(c *ishell.Context) {
@@ -782,7 +776,7 @@ func createUser(c *ishell.Context) {
 
 	session.userClient = userClient
 	session.userName = userName
-	c.SetPrompt(session.applicationID + "/" + session.userName + "> ")
+	c.SetPrompt(session.applicationKey + "/" + session.userName + "> ")
 }
 
 func loginUser(c *ishell.Context) {
@@ -802,7 +796,7 @@ func loginUser(c *ishell.Context) {
 
 	session.userClient = userClient
 	session.userName = userName
-	c.SetPrompt(session.applicationID + "/" + session.userName + "> ")
+	c.SetPrompt(session.applicationKey + "/" + session.userName + "> ")
 }
 
 func logoutUser(c *ishell.Context) {
@@ -818,7 +812,7 @@ func logoutUser(c *ishell.Context) {
 
 	session.userClient = nil
 	session.userName = ""
-	c.SetPrompt(session.applicationID + "> ")
+	c.SetPrompt(session.applicationKey + "> ")
 }
 
 func deleteUser(c *ishell.Context) {
@@ -836,22 +830,7 @@ func deleteUser(c *ishell.Context) {
 	c.Printf("Deleted user id %s\n", delUser.DeletedUserID)
 	session.userClient = nil
 	session.userName = ""
-	c.SetPrompt(session.applicationID + "> ")
-}
-
-func categories(c *ishell.Context) {
-	if session.appClient == nil {
-		c.Err(fmt.Errorf("use an application id first"))
-		return
-	}
-
-	list, err := session.appClient.Categories.List().Send()
-	if err != nil {
-		c.Err(err)
-		return
-	}
-
-	dumpJSON(c, list)
+	c.SetPrompt(session.applicationKey + "> ")
 }
 
 func searchProviders(c *ishell.Context) {
