@@ -1,7 +1,7 @@
 module code.bankrs.com/bosh
 
 require (
-	code.bankrs.com/bosgo v0.6.5
+	code.bankrs.com/bosgo v0.6.6
 	github.com/abiosoft/ishell v2.0.0+incompatible
 	github.com/abiosoft/readline v0.0.0-20180607040430-155bce2042db // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
